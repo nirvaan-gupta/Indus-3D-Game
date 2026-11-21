@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {startJump,stepJump} from '../src/movement.js';
+import {createCharacter,characterNames} from '../src/characters.js';
+test('jump lifts off, rejects an airborne second jump, and lands at ground level',()=>{for(const dt of [1/30,1/60,1/144]){const state={height:0,velocity:0};assert.ok(startJump(state));let peak=0;for(let i=0;i<Math.ceil(2/dt);i++){stepJump(state,dt);peak=Math.max(peak,state.height);if(state.height>0)assert.equal(startJump(state),false)}assert.ok(peak>1&&peak<1.3);assert.equal(state.height,0);assert.equal(state.velocity,0);assert.ok(startJump(state))}});
+test('four character models can animate in walking and jumping states',()=>{assert.equal(new Set(characterNames).size,4);for(let i=0;i<4;i++){const character=createCharacter(i);assert.equal(character.root.name,characterNames[i]);assert.ok(character.root.children.length>=10);character.animate(true,1,false);character.animate(false,1,true);character.root.traverse(o=>{for(const value of [o.rotation.x,o.rotation.y,o.rotation.z])assert.ok(Number.isFinite(value))})}});

@@ -1,0 +1,10 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {terrainHeight,walkHeight} from '../src/terrain.js';
+import {GATE,SPAWN,SPAWN_YAW,GATE_ANGLE,gatePoint,buildings,buildingPoint} from '../src/layout.js';
+import {createCampus,canOccupy} from '../src/campus.js';
+test('main gate faces administration with a clear straight approach',()=>{const dx=-SPAWN.x,dz=-SPAWN.z,l=Math.hypot(dx,dz);assert.ok(Math.abs(-Math.sin(SPAWN_YAW)-dx/l)<1e-9);assert.ok(Math.abs(-Math.cos(SPAWN_YAW)-dz/l)<1e-9);const {colliders}=createCampus();for(let t=0;t<=1;t+=.002){const x=SPAWN.x*(1-t),z=SPAWN.z*(1-t);assert.ok(canOccupy(x,z,colliders),'gate-to-admin route obstructed')}});
+
+test('terrain has elevation, finite heights and continuous gentle slopes',()=>{let min=Infinity,max=-Infinity;for(let x=-180;x<220;x+=3)for(let z=-85;z<135;z+=3){const h=terrainHeight(x,z);assert.ok(Number.isFinite(h));min=Math.min(min,h);max=Math.max(max,h);assert.ok(Math.abs(terrainHeight(x+.1,z)-h)<.08);assert.ok(Math.abs(terrainHeight(x,z+.1)-h)<.08)}assert.ok(max-min>3)});
+test('building floor pads are level and stairs provide walkable height',()=>{for(const b of buildings){const h=terrainHeight(b.x,b.z);for(const [dx,dz] of [[-b.w/2+1,0],[b.w/2-1,0],[0,b.d/2-1]]){const p=buildingPoint(b,dx,dz);assert.ok(Math.abs(terrainHeight(p.x,p.z)-h)<.001)}const p=buildingPoint(b,0,b.d/2+.5);assert.ok(walkHeight(p.x,p.z)>terrainHeight(p.x,p.z)+.15)}});
+
+ test('all three gate lanes are open and flanking blocks are on the correct sides',()=>{const {colliders}=createCampus();for(const offset of [-11,0,16])for(let x=-10;x<10;x+=.2){const p=gatePoint(x,offset);assert.ok(canOccupy(p.x,p.z,colliders),'blocked gate lane '+offset);}const local=b=>({along:Math.cos(GATE_ANGLE)*(b.x-GATE.x)-Math.sin(GATE_ANGLE)*(b.z-GATE.z),across:Math.sin(GATE_ANGLE)*(b.x-GATE.x)+Math.cos(GATE_ANGLE)*(b.z-GATE.z)});const secondary=local(buildings.find(b=>b.name==='Secondary block')),primary=local(buildings.find(b=>b.name==='Primary block'));assert.ok(secondary.across<0);assert.ok(primary.across>0);assert.ok(primary.along<Math.hypot(GATE.x,GATE.z));});
